@@ -54,9 +54,9 @@ limit_num = ["32KiB", "256KiB", "1MiB"]
 # TODO: Update this to return generators with sound parameters
 def generator_factory():
     generator = ComplexGenerator()
-    generator.add_linear(rate="20GB/s", data_limit=translate_limit["32KiB"])
-    generator.add_linear(rate="20GB/s", data_limit=translate_limit["256KiB"])
-    generator.add_linear(rate="20GB/s", data_limit=translate_limit["1MiB"])
+    generator.add_linear(rate="1000GB/s", data_limit=translate_limit["32KiB"])
+    generator.add_linear(rate="1000GB/s", data_limit=translate_limit["256KiB"])
+    generator.add_linear(rate="1000GB/s", data_limit=translate_limit["1MiB"])
     return generator
 
 def cache_factory(cache_class):
@@ -144,6 +144,7 @@ stats = gem5stats.get_simstat(root)
 json_out = join(m5.options.outdir, "stats_32KiB.json")
 with open(json_out, "w") as json_stats:
     stats.system.processor.dump(json_stats, indent=2)
+m5.stats.dump()
 
 m5.stats.reset()
 generator.start_traffic()
@@ -156,6 +157,7 @@ stats = gem5stats.get_simstat(root)
 json_out = join(m5.options.outdir, "stats_256KiB.json")
 with open(json_out, "w") as json_stats:
     stats.system.processor.dump(json_stats, indent=2)
+m5.stats.dump()
 
 m5.stats.reset()
 generator.start_traffic()
@@ -168,5 +170,6 @@ stats = gem5stats.get_simstat(root)
 json_out = join(m5.options.outdir, "stats_1MiB.json")
 with open(json_out, "w") as json_stats:
     stats.system.processor.dump(json_stats, indent=2)
+m5.stats.dump()
 
 print("Simulation finished!")
