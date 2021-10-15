@@ -54,6 +54,8 @@ limit_num = ["32KiB", "256KiB", "1MiB"]
 # TODO: Update this to return generators with sound parameters
 def generator_factory():
     generator = ComplexGenerator()
+    generator.add_linear(rate="1000GB/s", data_limit=translate_limit["256KiB"])
+    generator.add_linear(rate="1000GB/s", data_limit=translate_limit["32KiB"])
     generator.add_linear(rate="1000GB/s", data_limit=translate_limit["32KiB"])
     generator.add_linear(rate="1000GB/s", data_limit=translate_limit["256KiB"])
     generator.add_linear(rate="1000GB/s", data_limit=translate_limit["1MiB"])
@@ -134,6 +136,22 @@ root = Root(full_system=False, system=motherboard)
 
 m5.instantiate()
 
+generator.start_traffic()
+print("Warming up the L2 cache")
+exit_event = m5.simulate()
+print(
+    "Exiting @ tick {} because {}.".format(m5.curTick(), exit_event.getCause())
+)
+
+m5.stats.reset()
+generator.start_traffic()
+print("Warming up the L1 cache")
+exit_event = m5.simulate()
+print(
+    "Exiting @ tick {} because {}.".format(m5.curTick(), exit_event.getCause())
+)
+
+m5.stats.reset()
 generator.start_traffic()
 print("Beginning simulation! With 32KiB data limit")
 exit_event = m5.simulate()
