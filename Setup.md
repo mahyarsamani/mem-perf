@@ -28,7 +28,7 @@ Now, cherry-pick the change that adds multi-channel memory to the components lib
 $ git fetch https://gem5.googlesource.com/public/gem5 refs/changes/87/51287/4 && git cherry-pick FETCH_HEAD
 ```
 
-# Running memory factory
+# Running memory experiments
 
 Use the script "automate\_all.sh" to run experiments using DDR3, DDR4, LPDDR3,
 and HBM. The number of channels vary from 1 to 16. Use the same file to change

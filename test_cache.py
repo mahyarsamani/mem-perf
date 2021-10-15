@@ -52,25 +52,11 @@ limit_num = ["32KiB", "256KiB", "1MiB"]
 
 
 # TODO: Update this to return generators with sound parameters
-def generator_factory(traffic_mode):
-    if traffic_mode == "Linear":
-        generator = ComplexGenerator()
-        generator.add_linear(rate="20GB/s", data_limit=translate_limit["32KiB"])
-        generator.add_linear(rate="20GB/s", data_limit=translate_limit["256KiB"])
-        generator.add_linear(rate="20GB/s", data_limit=translate_limit["1MiB"])
-    elif traffic_mode == "Random":
-        generator = ComplexGenerator()
-        generator.add_random(rate="20GB/s", data_limit=translate_limit["32KiB"])
-        generator.add_random(rate="20GB/s", data_limit=translate_limit["256KiB"])
-        generator.add_random(rate="20GB/s", data_limit=translate_limit["1MiB"])
-    elif traffic_mode == "GUPS":
-        generator = GUPSGenerator(update_limit = 1000)
-    elif traffic_mode == "GUPSEP":
-        generator = GUPSGeneratorEP(num_cores = 2, update_limit = 1000)
-    elif traffic_mode == "GUPSPAR":
-        generator = GUPSGeneratorPAR(num_cores = 2, update_limit = 1000)
-    else:
-        raise ValueError
+def generator_factory():
+    generator = ComplexGenerator()
+    generator.add_linear(rate="20GB/s", data_limit=translate_limit["32KiB"])
+    generator.add_linear(rate="20GB/s", data_limit=translate_limit["256KiB"])
+    generator.add_linear(rate="20GB/s", data_limit=translate_limit["1MiB"])
     return generator
 
 def cache_factory(cache_class):
@@ -112,20 +98,12 @@ def cache_factory(cache_class):
     else:
         raise ValueError
 
-def memory_factory(memory_class, num_channels):
-    pass
 
 parser = argparse.ArgumentParser(
     description="A traffic generator that can be used to test a gem5 "
     "memory component."
 )
 
-parser.add_argument(
-    "generator_class",
-    type=str,
-    help="Type of traffic to be generated",
-    choices=["Linear", "Random", "GUPS", "GUPSEP", "GUPSPAR"],
-)
 
 parser.add_argument(
     "cache_class",
@@ -137,11 +115,11 @@ parser.add_argument(
 args = parser.parse_args()
 
 
-generator = generator_factory(args.generator_class)
+generator = generator_factory()
 
 cache_hierarchy = cache_factory(args.cache_class)
 
-memory = SimpleSingleChannelMemory(latency = "24ns", latency_var = "0ns", bandwidth = "12GB/s")
+memory = SimpleSingleChannelMemory(latency = "60ns", latency_var = "0ns", bandwidth = "1000GB/s")
 
 motherboard = TestBoard(
     clk_freq="4GHz",
@@ -153,8 +131,6 @@ motherboard = TestBoard(
 motherboard.connect_things()
 
 root = Root(full_system=False, system=motherboard)
-
-json_files = []
 
 m5.instantiate()
 
@@ -168,7 +144,7 @@ stats = gem5stats.get_simstat(root)
 json_out = join(m5.options.outdir, "stats_32KiB.json")
 with open(json_out, "w") as json_stats:
     stats.system.processor.dump(json_stats, indent=2)
-    json_files.append(stats.system.processor)
+
 m5.stats.reset()
 generator.start_traffic()
 print("Resuming simulation! With 256KiB data limit")
@@ -180,7 +156,7 @@ stats = gem5stats.get_simstat(root)
 json_out = join(m5.options.outdir, "stats_256KiB.json")
 with open(json_out, "w") as json_stats:
     stats.system.processor.dump(json_stats, indent=2)
-    json_files.append(stats.system.processor)
+
 m5.stats.reset()
 generator.start_traffic()
 print("Resuming simulation! With 1MiB data limit")
@@ -192,6 +168,5 @@ stats = gem5stats.get_simstat(root)
 json_out = join(m5.options.outdir, "stats_1MiB.json")
 with open(json_out, "w") as json_stats:
     stats.system.processor.dump(json_stats, indent=2)
-    json_files.append(stats.system.processor)
 
-
+print("Simulation finished!")

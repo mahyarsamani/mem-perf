@@ -30,207 +30,115 @@ linear traffic generator, and ends with a random traffic generator. It is used
 for testing purposes.
 """
 import m5
-import re
 import argparse
-import pandas as pd
-import seaborn as sns
 
-from os import listdir
 from os.path import join
 from m5.stats import gem5stats
 from gem5.components.boards.test_board import TestBoard
-from gem5.components.processors.gups_generator import GUPSGenerator
 from gem5.components.memory.multi_channel import MultiChannelMemory
 from gem5.components.cachehierarchies.classic.no_cache import NoCache
-#from gem5.components.processors.linear_generator import LinearGenerator
-from gem5.components.processors.gups_generator_ep import GUPSGeneratorEP
-from gem5.components.processors.complex_generator import ComplexGenerator
-from gem5.components.processors.gups_generator_par import GUPSGeneratorPAR
-from m5.objects import Root, DDR3_1600_8x8, DDR4_2400_8x8, LPDDR3_1600_1x32,\
-    HBM_1000_4H_1x128
+from gem5.components.processors.linear_generator import LinearGenerator
+from gem5.components.processors.random_generator import RandomGenerator
+from m5.objects import (
+    Root,
+    DDR3_1600_8x8,
+    DDR4_2400_8x8,
+    LPDDR3_1600_1x32,
+    HBM_1000_4H_1x128,
+)
 
-translate_limit = {"32KiB": 0x8000, "256KiB": 0x40000, "1MiB": 0x100000}
-limit_num = ["32KiB", "256KiB", "1MiB"]
-
-
-# TODO: Update this to return generators with sound parameters
 def generator_factory(traffic_mode):
     if traffic_mode == "Linear":
-        generator = ComplexGenerator()
-        generator.add_linear(rate="20GB/s",
-            data_limit=translate_limit["32KiB"])
-        generator.add_linear(rate="20GB/s",
-            data_limit=translate_limit["256KiB"])
-        generator.add_linear(rate="20GB/s",
-            data_limit=translate_limit["1MiB"])
+        return LinearGenerator(duration = "100us", rate = "20GB/s")
     elif traffic_mode == "Random":
-        generator = ComplexGenerator()
-        generator.add_random(rate="20GB/s",
-            data_limit=translate_limit["32KiB"])
-        generator.add_random(rate="20GB/s",
-            data_limit=translate_limit["256KiB"])
-        generator.add_random(rate="20GB/s",
-            data_limit=translate_limit["1MiB"])
-    elif traffic_mode == "GUPS":
-        generator = GUPSGenerator(update_limit = 1000)
-    elif traffic_mode == "GUPSEP":
-        generator = GUPSGeneratorEP(num_cores = 2, update_limit = 1000)
-    elif traffic_mode == "GUPSPAR":
-        generator = GUPSGeneratorPAR(num_cores = 2, update_limit = 1000)
-    else:
-        raise ValueError
-    return generator
-
-def cache_factory (cache_class):
-    if cache_class == "NoCache":
-        return NoCache ()
-    elif cache_class == "PrivateL1":
-        from gem5.components.cachehierarchies.classic\
-            .private_l1_cache_hierarchy import (
-            PrivateL1CacheHierarchy,
-        )
-
-        return PrivateL1CacheHierarchy (l1i_size = "32KiB", l1d_size="32KiB")
-    elif cache_class == "PrivateL1PrivateL2":
-        from gem5.components.cachehierarchies.classic\
-            .private_l1_private_l2_cache_hierarchy import (
-            PrivateL1PrivateL2CacheHierarchy,
-        )
-
-        return PrivateL1PrivateL2CacheHierarchy (
-            l1i_size = "32KiB", l1d_size = "32KiB", l2_size = "256KiB"
-        )
-    elif cache_class == "MESITwoLevel":
-        from gem5.components.cachehierarchies.ruby\
-            .mesi_two_level_cache_hierarchy import (
-            MESITwoLevelCacheHierarchy,
-        )
-
-        return MESITwoLevelCacheHierarchy (
-            l1i_size  = "32KiB",
-            l1i_assoc = "8",
-            l1d_size  = "32KiB",
-            l1d_assoc = "8",
-            l2_size   = "256KiB",
-            l2_assoc  = "4",
-            num_l2_banks = 1,
-        )
+        return RandomGenerator(duration = "100us", rate = "20GB/s")
     else:
         raise ValueError
 
-def memory_factory (memory_class, num_chan):
+def memory_factory(memory_class, num_channels):
     # TODO
     if memory_class == "DDR3":
-        return MultiChannelMemory (
-            dram_interface_class = DDR3_1600_8x8,
-            num_channels = num_chan
+        return MultiChannelMemory(
+            dram_interface_class=DDR3_1600_8x8, num_channels=num_channels
         )
     elif memory_class == "DDR4":
-        return MultiChannelMemory (
-            dram_interface_class = DDR4_2400_8x8,
-            num_channels = num_chan
+        return MultiChannelMemory(
+            dram_interface_class=DDR4_2400_8x8, num_channels=num_channels
         )
     elif memory_class == "LPDDR3":
-        return MultiChannelMemory (
-            dram_interface_class = LPDDR3_1600_1x32,
-            num_channels = num_chan
+        return MultiChannelMemory(
+            dram_interface_class=LPDDR3_1600_1x32, num_channels=num_channels
         )
     elif memory_class == "HBM":
-        return MultiChannelMemory (
-            dram_interface_class = HBM_1000_4H_1x128,
-            num_channels = num_chan
+        return MultiChannelMemory(
+            dram_interface_class=HBM_1000_4H_1x128, num_channels=num_channels
         )
     else:
         raise ValueError
 
+
 parser = argparse.ArgumentParser(
-    description = "A traffic generator that can be sed to test a gem5 "
+    description="A traffic generator that can be sed to test a gem5 "
     "memory component."
 )
 
-parser.add_argument (
+parser.add_argument(
     "generator_class",
-    type = str,
-    help = "Type of traffic to be generated",
-    choices = ["Linear", "Random", "GUPS", "GUPSEP", "GUPSPAR"],
+    type=str,
+    help="Type of traffic to be generated",
+    choices=["Linear", "Random", "GUPS", "GUPSEP", "GUPSPAR"],
 )
 
-parser.add_argument (
-    "cache_class",
-    type = str,
-    help = "The type of cache to be used in the system",
-    choices = ["NoCache", "PrivateL1", "PrivateL1PrivateL2", "MESITwoLevel"],
+parser.add_argument(
+    "traffic_intensity",
+    type=str,
+    help="The intensity of injected traffic",
+    choices=["Loaded", "Unloaded"]
 )
 
-parser.add_argument (
+parser.add_argument(
     "memory_class",
-    type = str,
-    help = "The type of memory to be used in the system",
-    choices = ["DDR3", "DDR4", "LPDDR3", "HBM"],
+    type=str,
+    help="The type of memory to be used in the system",
+    choices=["DDR3", "DDR4", "LPDDR3", "HBM"],
 )
 
-parser.add_argument (
-    "num_chan",
-    type = int,
-    help = "The number of channels that we want to simulate",
-    #choices = ["1 to N"],
+parser.add_argument(
+    "num_channels",
+    type=int,
+    help="The number of channels that we want to simulate",
 )
 
-args = parser.parse_args ()
+args = parser.parse_args()
 
-generator = generator_factory (args.generator_class)
+generator = generator_factory(args.generator_class)
 
-cache_hierarchy = cache_factory (args.cache_class)
+cache_hierarchy = NoCache()
 
-memory = memory_factory (args.memory_class, args.num_chan)
+memory = memory_factory(args.memory_class, args.num_channels)
 
-motherboard = TestBoard (
-    clk_freq = "4GHz",
-    processor = generator,
-    cache_hierarchy = cache_hierarchy,
-    memory = memory,
+motherboard = TestBoard(
+    clk_freq="4GHz",
+    processor=generator,
+    cache_hierarchy=cache_hierarchy,
+    memory=memory,
 )
 
-motherboard.connect_things ()
+motherboard.connect_things()
 
-root = Root (full_system = False, system = motherboard)
+root = Root(full_system=False, system=motherboard)
 
-json_files = []
+m5.instantiate()
 
-m5.instantiate ()
-
-generator.start_traffic ()
-print ("Beginning simulatrion with 32 KiB data limit.")
-exit_event = m5.simulate ()
-print ("exiting @ tick {} because {}.".format(m5.curTick (),
-    exit_event.getCause ())
-)
-stats = gem5stats.get_simstat (root)
-json_out = join (m5.options.outdir, "stats_32KiB.json")
-with open (json_out, "w") as json_stats:
-    stats.system.processor.dump (json_stats, indent = 2)
-    json_files.append (stats.system.processor)
-m5.stats.reset ()
-generator.start_traffic ()
-print("Resuming simulation! With 256KiB data limit")
-exit_event = m5.simulate()
-print(
-    "Exiting @ tick {} because {}.".format(m5.curTick(), exit_event.getCause())
-)
-stats = gem5stats.get_simstat(root)
-json_out = join(m5.options.outdir, "stats_256KiB.json")
-with open(json_out, "w") as json_stats:
-    stats.system.processor.dump(json_stats, indent=2)
-    json_files.append(stats.system.processor)
-m5.stats.reset()
 generator.start_traffic()
-print("Resuming simulation! With 1MiB data limit")
+print("Beginning simulatrion")
 exit_event = m5.simulate()
 print(
-    "Exiting @ tick {} because {}.".format(m5.curTick(), exit_event.getCause())
+    "exiting @ tick {} because {}.".format(m5.curTick(), exit_event.getCause())
 )
 stats = gem5stats.get_simstat(root)
-json_out = join(m5.options.outdir, "stats_1MiB.json")
+json_out = join(m5.options.outdir, "processor_stats.json")
 with open(json_out, "w") as json_stats:
     stats.system.processor.dump(json_stats, indent=2)
-    json_files.append(stats.system.processor)
+
+print("Simulation finished")
