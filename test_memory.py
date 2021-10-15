@@ -47,16 +47,21 @@ from m5.objects import (
     HBM_1000_4H_1x128,
 )
 
-def generator_factory(traffic_mode):
-    if traffic_mode == "Linear":
-        return LinearGenerator(duration = "100us", rate = "20GB/s")
-    elif traffic_mode == "Random":
-        return RandomGenerator(duration = "100us", rate = "20GB/s")
+intensity_rate_map = {
+    "Loaded" : "20GB/s",
+    "Unloaded" : "1GB/s"
+}
+
+def generator_factory(generator_class, intensity):
+    rate = intensity_rate_map[intensity]
+    if generator_class == "Linear":
+        return LinearGenerator(duration = "100us", rate = rate)
+    elif generator_class == "Random":
+        return RandomGenerator(duration = "100us", rate = rate)
     else:
         raise ValueError
 
 def memory_factory(memory_class, num_channels):
-    # TODO
     if memory_class == "DDR3":
         return MultiChannelMemory(
             dram_interface_class=DDR3_1600_8x8, num_channels=num_channels
@@ -76,7 +81,6 @@ def memory_factory(memory_class, num_channels):
     else:
         raise ValueError
 
-
 parser = argparse.ArgumentParser(
     description="A traffic generator that can be sed to test a gem5 "
     "memory component."
@@ -86,7 +90,7 @@ parser.add_argument(
     "generator_class",
     type=str,
     help="Type of traffic to be generated",
-    choices=["Linear", "Random", "GUPS", "GUPSEP", "GUPSPAR"],
+    choices=["Linear", "Random"],
 )
 
 parser.add_argument(
@@ -111,7 +115,7 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-generator = generator_factory(args.generator_class)
+generator = generator_factory(args.generator_class, args.traffic_intensity)
 
 cache_hierarchy = NoCache()
 
