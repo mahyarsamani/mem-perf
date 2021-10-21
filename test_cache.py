@@ -42,12 +42,9 @@ from m5.objects import Root
 from m5.stats import gem5stats
 from gem5.components.boards.test_board import TestBoard
 from gem5.components.processors.complex_generator import ComplexGenerator
-from gem5.components.processors.gups_generator import GUPSGenerator
-from gem5.components.processors.gups_generator_ep import GUPSGeneratorEP
-from gem5.components.processors.gups_generator_par import GUPSGeneratorPAR
 from gem5.components.memory.single_channel import SimpleSingleChannelMemory
 
-translate_limit = {"32KiB": 0x8000, "256KiB": 0x40000, "1MiB": 0x100000}
+translate_limit = {"32KiB": 0x8000, "256KiB": 0x40000, "1MiB": 0x10000000}
 limit_num = ["32KiB", "256KiB", "1MiB"]
 
 

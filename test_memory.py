@@ -64,19 +64,19 @@ def generator_factory(generator_class, intensity):
 def memory_factory(memory_class, num_channels):
     if memory_class == "DDR3":
         return MultiChannelMemory(
-            dram_interface_class=DDR3_1600_8x8, num_channels=num_channels
+            dram_interface_class=DDR3_1600_8x8, num_channels=num_channels, addr_mapping = "RoCoRaBaCh"
         )
     elif memory_class == "DDR4":
         return MultiChannelMemory(
-            dram_interface_class=DDR4_2400_8x8, num_channels=num_channels
+            dram_interface_class=DDR4_2400_8x8, num_channels=num_channels, addr_mapping = "RoCoRaBaCh"
         )
     elif memory_class == "LPDDR3":
         return MultiChannelMemory(
-            dram_interface_class=LPDDR3_1600_1x32, num_channels=num_channels
+            dram_interface_class=LPDDR3_1600_1x32, num_channels=num_channels, addr_mapping = "RoCoRaBaCh"
         )
     elif memory_class == "HBM":
         return MultiChannelMemory(
-            dram_interface_class=HBM_1000_4H_1x128, num_channels=num_channels
+            dram_interface_class=HBM_1000_4H_1x128, num_channels=num_channels, addr_mapping = "RoCoRaBaCh"
         )
     else:
         raise ValueError
