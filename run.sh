@@ -1,8 +1,8 @@
 #!/bin/bash
 generators=(Linear Random)
 intensities=(Loaded Unloaded)
-memories=(DDR3 DDR4 LPDDR3 HBM)
-num_channels=(1)
+memories=(DDR3 DDR4 LPDDR5 HBM)
+num_channels=(1 2)
 
 for generator in "${generators[@]}"
     do for intensity in "${intensities[@]}"

@@ -43,43 +43,61 @@ from m5.objects import (
     Root,
     DDR3_1600_8x8,
     DDR4_2400_8x8,
-    LPDDR3_1600_1x32,
     HBM_1000_4H_1x128,
+    LPDDR5_5500_1x16_8B_BL32,
 )
 
-intensity_rate_map = {
-    "Loaded" : "20GB/s",
-    "Unloaded" : "1GB/s"
-}
 
-def generator_factory(generator_class, intensity):
-    rate = intensity_rate_map[intensity]
-    if generator_class == "Linear":
-        return LinearGenerator(duration = "100us", rate = rate)
-    elif generator_class == "Random":
-        return RandomGenerator(duration = "100us", rate = rate)
+def translate_intensity(intensity, num_channels):
+    if intensity == "Loaded":
+        return str(24 * num_channels) + "GB/s"
+    elif intensity == "Unloaded":
+        return "1GB/s"
     else:
         raise ValueError
+
+
+def generator_factory(generator_class, rate, mem_size):
+    if generator_class == "Linear":
+        return LinearGenerator(
+            duration="250us", rate=rate, min_addr=0, max_addr=mem_size
+        )
+    elif generator_class == "Random":
+        return RandomGenerator(
+            duration="250us", rate=rate, min_addr=0, max_addr=mem_size
+        )
+    else:
+        raise ValueError
+
 
 def memory_factory(memory_class, num_channels):
     if memory_class == "DDR3":
         return MultiChannelMemory(
-            dram_interface_class=DDR3_1600_8x8, num_channels=num_channels, addr_mapping = "RoCoRaBaCh"
+            dram_interface_class=DDR3_1600_8x8,
+            num_channels=num_channels,
+            addr_mapping="RoCoRaBaCh",
         )
     elif memory_class == "DDR4":
         return MultiChannelMemory(
-            dram_interface_class=DDR4_2400_8x8, num_channels=num_channels, addr_mapping = "RoCoRaBaCh"
+            dram_interface_class=DDR4_2400_8x8,
+            num_channels=num_channels,
+            addr_mapping="RoCoRaBaCh",
         )
-    elif memory_class == "LPDDR3":
+    elif memory_class == "LPDDR5":
         return MultiChannelMemory(
-            dram_interface_class=LPDDR3_1600_1x32, num_channels=num_channels, addr_mapping = "RoCoRaBaCh"
+            dram_interface_class=LPDDR5_5500_1x16_8B_BL32,
+            num_channels=num_channels,
+            addr_mapping="RoCoRaBaCh",
         )
     elif memory_class == "HBM":
         return MultiChannelMemory(
-            dram_interface_class=HBM_1000_4H_1x128, num_channels=num_channels, addr_mapping = "RoCoRaBaCh"
+            dram_interface_class=HBM_1000_4H_1x128,
+            num_channels=num_channels,
+            addr_mapping="RoCoRaBaCh",
         )
     else:
         raise ValueError
+
 
 parser = argparse.ArgumentParser(
     description="A traffic generator that can be sed to test a gem5 "
@@ -97,14 +115,14 @@ parser.add_argument(
     "traffic_intensity",
     type=str,
     help="The intensity of injected traffic",
-    choices=["Loaded", "Unloaded"]
+    choices=["Loaded", "Unloaded"],
 )
 
 parser.add_argument(
     "memory_class",
     type=str,
     help="The type of memory to be used in the system",
-    choices=["DDR3", "DDR4", "LPDDR3", "HBM"],
+    choices=["DDR3", "DDR4", "LPDDR5", "HBM"],
 )
 
 parser.add_argument(
@@ -115,11 +133,16 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-generator = generator_factory(args.generator_class, args.traffic_intensity)
+memory = memory_factory(args.memory_class, args.num_channels)
+
+generator = generator_factory(
+    args.generator_class,
+    translate_intensity(args.traffic_intensity, args.num_channels),
+    memory.get_size(),
+)
 
 cache_hierarchy = NoCache()
 
-memory = memory_factory(args.memory_class, args.num_channels)
 
 motherboard = TestBoard(
     clk_freq="4GHz",
