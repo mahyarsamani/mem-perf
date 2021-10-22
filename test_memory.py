@@ -48,35 +48,37 @@ from m5.objects import (
 )
 
 intensity_rate_map = {
-    "Loaded" : "20GB/s",
+    "Loaded" : "100GB/s",
     "Unloaded" : "1GB/s"
 }
 
 def generator_factory(generator_class, intensity):
     rate = intensity_rate_map[intensity]
     if generator_class == "Linear":
-        return LinearGenerator(duration = "100us", rate = rate)
+        print("Creating a Linear")
+        return LinearGenerator(duration = "1ms", rate = rate, max_addr = 0x40000000)
     elif generator_class == "Random":
-        return RandomGenerator(duration = "100us", rate = rate)
+        print("Creating a Random")
+        return RandomGenerator(duration = "1ms", rate = rate, max_addr = 0x40000000)
     else:
         raise ValueError
 
 def memory_factory(memory_class, num_channels):
     if memory_class == "DDR3":
         return MultiChannelMemory(
-            dram_interface_class=DDR3_1600_8x8, num_channels=num_channels
+            dram_interface_class=DDR3_1600_8x8, num_channels=num_channels, addr_mapping = "RoCoRaBaCh"
         )
     elif memory_class == "DDR4":
         return MultiChannelMemory(
-            dram_interface_class=DDR4_2400_8x8, num_channels=num_channels
+            dram_interface_class=DDR4_2400_8x8, num_channels=num_channels, addr_mapping = "RoCoRaBaCh"
         )
     elif memory_class == "LPDDR3":
         return MultiChannelMemory(
-            dram_interface_class=LPDDR3_1600_1x32, num_channels=num_channels
+            dram_interface_class=LPDDR3_1600_1x32, num_channels=num_channels, addr_mapping = "RoCoRaBaCh"
         )
     elif memory_class == "HBM":
         return MultiChannelMemory(
-            dram_interface_class=HBM_1000_4H_1x128, num_channels=num_channels
+            dram_interface_class=HBM_1000_4H_1x128, num_channels=num_channels, addr_mapping = "RoCoRaBaCh"
         )
     else:
         raise ValueError
